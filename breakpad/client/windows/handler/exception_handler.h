@@ -61,10 +61,6 @@
 #include <dbghelp.h>
 #include <rpc.h>
 
-#pragma warning(push)
-// Disable exception handler warnings.
-#pragma warning(disable:4530)
-
 #include <list>
 #include <string>
 #include <vector>
@@ -516,7 +512,5 @@ class ExceptionHandler {
 };
 
 }  // namespace google_breakpad
-
-#pragma warning(pop)
 
 #endif  // CLIENT_WINDOWS_HANDLER_EXCEPTION_HANDLER_H__
