@@ -14,6 +14,10 @@ HEADERS  += mainwindow.h
 
 FORMS    += mainwindow.ui
 
-# include breakpad
-INCLUDEPATH += ../breakpad/
-include(../breakpad/breakpad.pri)
+# include Breakpad
+win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../breakpad/release/ -lbreakpad
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../breakpad/debug/ -lbreakpad
+else:unix: LIBS += -L$$OUT_PWD/../breakpad/ -lbreakpad
+
+INCLUDEPATH += $$PWD/../breakpad
+DEPENDPATH += $$PWD/../breakpad

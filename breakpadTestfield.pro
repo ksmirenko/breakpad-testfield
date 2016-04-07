@@ -1,7 +1,9 @@
 TEMPLATE = subdirs
 
-SUBDIRS += \
-    gui \
-    breakpad
-
 CONFIG += c++11
+
+SUBDIRS += \
+	breakpad \
+	gui
+
+gui.depends = breakpad

@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Google Inc.
+// Copyright (c) 2006, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,27 +27,50 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// dump_object.h: A base class for all mini/micro dump object.
+// guid_string.cc: Convert GUIDs to strings.
+//
+// See guid_string.h for documentation.
 
-#ifndef GOOGLE_BREAKPAD_PROCESSOR_DUMP_OBJECT_H__
-#define GOOGLE_BREAKPAD_PROCESSOR_DUMP_OBJECT_H__
+#include <wchar.h>
+
+#include "common/windows/string_utils-inl.h"
+
+#include "common/windows/guid_string.h"
 
 namespace google_breakpad {
 
-// DumpObject is the base of various mini/micro dump's objects.
-class DumpObject {
- public:
-  DumpObject();
+// static
+wstring GUIDString::GUIDToWString(GUID *guid) {
+  wchar_t guid_string[37];
+  swprintf(
+      guid_string, sizeof(guid_string) / sizeof(guid_string[0]),
+      L"%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+      guid->Data1, guid->Data2, guid->Data3,
+      guid->Data4[0], guid->Data4[1], guid->Data4[2],
+      guid->Data4[3], guid->Data4[4], guid->Data4[5],
+      guid->Data4[6], guid->Data4[7]);
 
-  bool valid() const { return valid_; }
+  // remove when VC++7.1 is no longer supported
+  guid_string[sizeof(guid_string) / sizeof(guid_string[0]) - 1] = L'\0';
 
- protected:
-  // DumpObjects are not valid when created.  When a subclass populates its own
-  // fields, it can set valid_ to true.  Accessors and mutators may wish to
-  // consider or alter the valid_ state as they interact with objects.
-  bool valid_;
-};
+  return wstring(guid_string);
+}
+
+// static
+wstring GUIDString::GUIDToSymbolServerWString(GUID *guid) {
+  wchar_t guid_string[33];
+  swprintf(
+      guid_string, sizeof(guid_string) / sizeof(guid_string[0]),
+      L"%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X",
+      guid->Data1, guid->Data2, guid->Data3,
+      guid->Data4[0], guid->Data4[1], guid->Data4[2],
+      guid->Data4[3], guid->Data4[4], guid->Data4[5],
+      guid->Data4[6], guid->Data4[7]);
+
+  // remove when VC++7.1 is no longer supported
+  guid_string[sizeof(guid_string) / sizeof(guid_string[0]) - 1] = L'\0';
+
+  return wstring(guid_string);
+}
 
 }  // namespace google_breakpad
-
-#endif  // GOOGLE_BREAKPAD_PROCESSOR_DUMP_OBJECT_H__
