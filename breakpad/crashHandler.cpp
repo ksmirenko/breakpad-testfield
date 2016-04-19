@@ -1,3 +1,17 @@
+/* Copyright 2016 Kirill Smirenko
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License. */
+
 #include "crashHandler.h"
 
 #include <QtCore/QDir>
@@ -7,6 +21,7 @@
 
 // for now Breakpad will work on Windows only
 #include "client/windows/handler/exception_handler.h"
+#include "client/windows/sender/crash_report_sender.h"
 
 namespace Breakpad {
 	class CrashHandlerPrivate
@@ -22,33 +37,52 @@ namespace Breakpad {
 			delete pHandler;
 		}
 
-		void InitCrashHandler(const QString& dumpPath);
-		static google_breakpad::ExceptionHandler* pHandler;
+		void InitCrashHandler(const QString &dumpPath);
+		static google_breakpad::ExceptionHandler *pHandler;
 		static bool bReportCrashesToSystem;
 	};
 
-	google_breakpad::ExceptionHandler* CrashHandlerPrivate::pHandler = NULL;
-	bool CrashHandlerPrivate::bReportCrashesToSystem = false;
+	const int MAX_REPORTS_PER_DAY = 5;
+	const std::wstring &REPORT_URL = L"http://caliper-ksmirenko.rhcloud.com/";
+	
+	google_breakpad::ExceptionHandler *CrashHandlerPrivate::pHandler = NULL;
+	bool CrashHandlerPrivate::bReportCrashesToSystem = true;
 
+	/// Callback that is called after minidumps have been written
 	bool DumpCallback(
-		const wchar_t* _dump_dir
-		, const wchar_t* _minidump_id
+		const wchar_t *dumpPath
+		, const wchar_t *minidumpId
 		, void* context
-		, EXCEPTION_POINTERS* exinfo
-		, MDRawAssertionInfo* assertion
+		, EXCEPTION_POINTERS *exinfo
+		, MDRawAssertionInfo *assertion
 		, bool success
 	)
 	{
 		Q_UNUSED(context);
-		Q_UNUSED(_dump_dir);
-		Q_UNUSED(_minidump_id);
+#if defined(Q_OS_WIN32)
 		Q_UNUSED(assertion);
 		Q_UNUSED(exinfo);
+#endif
 
-		/*
-		NO STACK USE, NO HEAP USE THERE !!!
-		Creating QString's, using qDebug, etc. - everything is crash-unfriendly.
-		*/
+		google_breakpad::CrashReportSender sender(dumpPath);
+		sender.set_max_reports_per_day(MAX_REPORTS_PER_DAY);
+		const std::map<std::wstring, std::wstring> params;
+		std::map<std::wstring, std::wstring> files;
+		// Reconstructing exact name of generated minidump file
+		//std::wstring key = std::wstring(minidumpId);
+		std::wstring filename = dumpPath;
+		filename += L"\\";
+		filename += minidumpId;
+		filename += L".dmp";
+		files.insert(std::pair<std::wstring, std::wstring>(L"", filename));
+		// Sending the report
+		const google_breakpad::ReportResult res = sender.SendCrashReport(REPORT_URL, params, files, 0);
+		// Notifying user about report sending result
+		if (res == google_breakpad::RESULT_SUCCEEDED)
+			MessageBox(0, L"Crash report was sent. Thank you!", L"Crash report", MB_OK|MB_ICONINFORMATION);
+		else
+			MessageBox(0, L"Could not send crash report. Thank you for trying, though!", L"Crash report", MB_OK|MB_ICONWARNING);
+
 		return CrashHandlerPrivate::bReportCrashesToSystem ? success : true;
 	}
 
@@ -103,9 +137,9 @@ namespace Breakpad {
 		return res;
 	}
 
-	void CrashHandler::Init(const QString& reportPath)
+	void CrashHandler::Init(const QString& dumpPath)
 	{
-		d->InitCrashHandler(reportPath);
+		d->InitCrashHandler(dumpPath);
 		qDebug("Breakpad initialized!");
 	}
 }

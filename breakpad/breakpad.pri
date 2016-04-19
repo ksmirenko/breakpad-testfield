@@ -30,19 +30,29 @@ HEADERS += crashHandler.h
 SOURCES +=\
 	$$PWD/client/windows/crash_generation/crash_generation_client.cc \
 	$$PWD/client/windows/handler/exception_handler.cc \
+	$$PWD/client/windows/sender/crash_report_sender.cc \
 	$$PWD/common/windows/guid_string.cc \
+	$$PWD/common/windows/http_upload.cc \
 	$$PWD/common/windows/string_utils.cc
 
 HEADERS +=\
 	$$PWD/client/windows/common/ipc_protocol.h \
 	$$PWD/client/windows/crash_generation/crash_generation_client.h \
 	$$PWD/client/windows/handler/exception_handler.h \
+	$$PWD/client/windows/sender/crash_report_sender.h \
 	$$PWD/common/scoped_ptr.h \
 	$$PWD/common/windows/guid_string.h \
+	$$PWD/common/windows/http_upload.h \
 	$$PWD/common/windows/string_utils-inl.h \
 	$$PWD/google_breakpad/common/breakpad_types.h \
 	$$PWD/google_breakpad/common/minidump_format.h
 
+win32 {
+	LIBS += -lwininet
+}
+
 
 DISTFILES += \
 	breakpad.pri
+
+CONFIG+=warn_off
