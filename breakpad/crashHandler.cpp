@@ -43,7 +43,7 @@ namespace Breakpad {
 	};
 
 	const int MAX_REPORTS_PER_DAY = 5;
-	const std::wstring &REPORT_URL = L"http://caliper-ksmirenko.rhcloud.com/";
+	const std::wstring &REPORT_URL = L"http://caliper-ksmirenko.rhcloud.com/crash_upload";
 	
 	google_breakpad::ExceptionHandler *CrashHandlerPrivate::pHandler = NULL;
 	bool CrashHandlerPrivate::bReportCrashesToSystem = true;
@@ -78,15 +78,28 @@ namespace Breakpad {
 		// Sending the report
 		const google_breakpad::ReportResult res = sender.SendCrashReport(REPORT_URL, params, files, 0);
 		// Notifying user about report sending result
-		if (res == google_breakpad::RESULT_SUCCEEDED)
-			MessageBox(0, L"Crash report was sent. Thank you!", L"Crash report", MB_OK|MB_ICONINFORMATION);
-		else
-			MessageBox(0, L"Could not send crash report. Thank you for trying, though!", L"Crash report", MB_OK|MB_ICONWARNING);
+		wchar_t *msg;
+		switch (res)
+		{
+			case google_breakpad::RESULT_SUCCEEDED:
+				msg = L"Crash report was SENT and accepted by the server.";
+			break;
+			case google_breakpad::RESULT_REJECTED:
+				msg = L"Crash report was sent, but the server REJECTED it.";
+			break;
+			case google_breakpad::RESULT_THROTTLED:
+				msg = L"Crash report was not sent due to exceeding day LIMIT.";
+			break;
+			default:
+				msg = L"Failed to communicate with the server.";
+			break;
+		}
+		MessageBox(0, msg, L"Crash report", MB_OK|MB_ICONINFORMATION);
 
 		return CrashHandlerPrivate::bReportCrashesToSystem ? success : true;
 	}
 
-	void CrashHandlerPrivate::InitCrashHandler(const QString& dumpPath)
+	void CrashHandlerPrivate::InitCrashHandler(const QString &dumpPath)
 	{
 		if (pHandler != NULL)
 			return;

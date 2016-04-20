@@ -32,6 +32,9 @@
 
 #include <errno.h>
 
+// DEBUG_CODE
+#include <QDebug>
+
 #include "client/windows/sender/crash_report_sender.h"
 #include "common/windows/http_upload.h"
 
@@ -71,6 +74,9 @@ ReportResult CrashReportSender::SendCrashReport(
   bool result = HTTPUpload::SendRequest(
     url, parameters, files, NULL, report_code,
     &http_response);
+
+  // DEBUG_CODE
+  qDebug("Result = %d", http_response);
 
   if (result) {
     ReportSent(today);
