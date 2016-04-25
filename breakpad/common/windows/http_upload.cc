@@ -68,7 +68,8 @@ class HTTPUpload::AutoInternetHandle {
 bool HTTPUpload::SendRequest(
 	const wstring &url
 	, const map<wstring, wstring> &parameters
-	, const map<wstring, wstring> &files
+	, const wstring &upload_file
+	, const wstring &file_part_name
 	, int *timeout
 	, wstring *response_body
 	, int *response_code
@@ -149,7 +150,8 @@ bool HTTPUpload::SendRequest(
   string request_body;
   if (!GenerateRequestBody(
 	parameters
-	, files
+	, upload_file
+	, file_part_name
 	, boundary
 	, &request_body)) {
     return false;
@@ -275,9 +277,15 @@ wstring HTTPUpload::GenerateRequestHeader(const wstring &boundary) {
 
 // static
 bool HTTPUpload::GenerateRequestBody(const map<wstring, wstring> &parameters,
-                                     const map<wstring, wstring> &files,
+									 const wstring &upload_file,
+									 const wstring &file_part_name,
                                      const wstring &boundary,
                                      string *request_body) {
+  vector<char> contents;
+	if (!GetFileContents(upload_file, &contents)) {
+	  return false;
+  }
+
   string boundary_str = WideToUTF8(boundary);
   if (boundary_str.empty()) {
     return false;
@@ -294,42 +302,34 @@ bool HTTPUpload::GenerateRequestBody(const map<wstring, wstring> &parameters,
                          WideToUTF8(pos->second) + "\r\n");
   }
 
-  for (map<wstring, wstring>::const_iterator pos = files.begin();
-       pos != files.end(); ++pos) {
-    vector<char> contents;
-    if (!GetFileContents(pos->second, &contents)) {
-      return false;
-    }
+  // Now append the upload file as a binary (octet-stream) part
+  string filename_utf8 = WideToUTF8(upload_file);
+  if (filename_utf8.empty()) {
+	return false;
+  }
 
-    // Now append the upload files as a binary (octet-stream) part
-    string filename_utf8 = WideToUTF8(pos->second);
-    if (filename_utf8.empty()) {
-      return false;
-	}
+  string file_part_name_utf8 = WideToUTF8(file_part_name);
+  if (file_part_name_utf8.empty()) {
+    return false;
+  }
 
 	//QString qtFilename = QString::fromWCharArray( pos->first.c_str() );
 	//qDebug("Filename in HttpUpload = '%s'", qPrintable(qtFilename));
 
-    string file_part_name_utf8 = WideToUTF8(pos->first);
-    if (file_part_name_utf8.empty()) {
-      return false;
-	}
+  request_body->append("--" + boundary_str + "\r\n");
+  request_body->append("Content-Disposition: form-data; "
+                       "name=\"" + file_part_name_utf8 + "\"; "
+                       "filename=\"" + filename_utf8 + "\"\r\n");
+  request_body->append("Content-Type: application/octet-stream\r\n");
+  request_body->append("\r\n");
 
 	qDebug("filename_utf8 = '%s'", qPrintable(QString::fromUtf8(filename_utf8.c_str())));
 	qDebug("file_part_name_utf8 = '%s'", qPrintable(QString::fromUtf8(file_part_name_utf8.c_str())));
 
-    request_body->append("--" + boundary_str + "\r\n");
-    request_body->append("Content-Disposition: form-data; "
-      "name=\"" + file_part_name_utf8 + "\"; "
-      "filename=\"" + filename_utf8 + "\"\r\n");
-    request_body->append("Content-Type: application/octet-stream\r\n");
-    request_body->append("\r\n");
-
-    if (!contents.empty()) {
-      request_body->append(&(contents[0]), contents.size());
-	}
-    request_body->append("\r\n");
+  if (!contents.empty()) {
+    request_body->append(&(contents[0]), contents.size());
   }
+  request_body->append("\r\n");
   request_body->append("--" + boundary_str + "--\r\n");
   return true;
 }
