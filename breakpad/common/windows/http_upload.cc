@@ -34,7 +34,7 @@
 #include <wininet.h>
 
 // DEBUG_CODE
-#include <QDebug>
+#include <QtCore/QDebug>
 
 #include "common/windows/string_utils-inl.h"
 
@@ -65,12 +65,14 @@ class HTTPUpload::AutoInternetHandle {
 };
 
 // static
-bool HTTPUpload::SendRequest(const wstring &url,
-                             const map<wstring, wstring> &parameters,
-                             const map<wstring, wstring> &files,
-                             int *timeout,
-                             wstring *response_body,
-                             int *response_code) {
+bool HTTPUpload::SendRequest(
+	const wstring &url
+	, const map<wstring, wstring> &parameters
+	, const map<wstring, wstring> &files
+	, int *timeout
+	, wstring *response_body
+	, int *response_code
+) {
   if (response_code) {
     *response_code = 0;
   }
@@ -137,8 +139,6 @@ bool HTTPUpload::SendRequest(const wstring &url,
     return false;
   }
 
-  qDebug("Oh, hello there! (1)");
-
   wstring boundary = GenerateMultipartBoundary();
   wstring content_type_header = GenerateRequestHeader(boundary);
   HttpAddRequestHeaders(request.get(),
@@ -147,11 +147,13 @@ bool HTTPUpload::SendRequest(const wstring &url,
                         HTTP_ADDREQ_FLAG_ADD);
 
   string request_body;
-  if (!GenerateRequestBody(parameters, files, boundary, &request_body)) {
+  if (!GenerateRequestBody(
+	parameters
+	, files
+	, boundary
+	, &request_body)) {
     return false;
   }
-
-  qDebug("Oh, hello there! (2)");
 
   if (timeout) {
     if (!InternetSetOption(request.get(),
@@ -183,8 +185,6 @@ bool HTTPUpload::SendRequest(const wstring &url,
                      0)) {
     return false;
   }
-
-  qDebug("Oh, hello there! (3)");
 
   int http_response = wcstol(http_status, NULL, 10);
   if (response_code) {
@@ -305,16 +305,18 @@ bool HTTPUpload::GenerateRequestBody(const map<wstring, wstring> &parameters,
     string filename_utf8 = WideToUTF8(pos->second);
     if (filename_utf8.empty()) {
       return false;
-    }
-	qDebug("GenerateRequestBody 1");
+	}
 
-	qDebug() << pos->first.c_str();
-	qDebug() << QString::fromStdWString(pos->first);
+	//QString qtFilename = QString::fromWCharArray( pos->first.c_str() );
+	//qDebug("Filename in HttpUpload = '%s'", qPrintable(qtFilename));
+
     string file_part_name_utf8 = WideToUTF8(pos->first);
     if (file_part_name_utf8.empty()) {
       return false;
-    }
-	qDebug("GenerateRequestBody 2");
+	}
+
+	qDebug("filename_utf8 = '%s'", qPrintable(QString::fromUtf8(filename_utf8.c_str())));
+	qDebug("file_part_name_utf8 = '%s'", qPrintable(QString::fromUtf8(file_part_name_utf8.c_str())));
 
     request_body->append("--" + boundary_str + "\r\n");
     request_body->append("Content-Disposition: form-data; "
@@ -325,11 +327,9 @@ bool HTTPUpload::GenerateRequestBody(const map<wstring, wstring> &parameters,
 
     if (!contents.empty()) {
       request_body->append(&(contents[0]), contents.size());
-    }
-	qDebug("GenerateRequestBody 3");
+	}
     request_body->append("\r\n");
   }
-  qDebug("GenerateRequestBody 4");
   request_body->append("--" + boundary_str + "--\r\n");
   return true;
 }

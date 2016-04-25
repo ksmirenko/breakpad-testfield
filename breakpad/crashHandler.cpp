@@ -14,6 +14,7 @@
 
 #include "crashHandler.h"
 
+#include <map>
 #include <QtCore/QDir>
 #include <QtCore/QProcess>
 #include <QtCore/QCoreApplication>
@@ -67,14 +68,17 @@ namespace Breakpad {
 		google_breakpad::CrashReportSender sender(dumpPath);
 		sender.set_max_reports_per_day(MAX_REPORTS_PER_DAY);
 		const std::map<std::wstring, std::wstring> params;
-		std::map<std::wstring, std::wstring> files;
 		// Reconstructing exact name of generated minidump file
 		//std::wstring key = std::wstring(minidumpId);
-		std::wstring filename = dumpPath;
-		filename += L"\\";
-		filename += minidumpId;
+		std::map<std::wstring, std::wstring> files;
+		std::wstring filename = minidumpId;
 		filename += L".dmp";
-		files.insert(std::pair<std::wstring, std::wstring>(L"", filename));
+		std::wstring filenameFull = dumpPath;
+		filenameFull += L"/";
+		filenameFull += filename;
+		files.insert(std::pair<std::wstring, std::wstring>(filename, filenameFull));
+		QString qtFilename = QString::fromWCharArray( filenameFull.c_str() );
+		qDebug("Filename = '%s'", qPrintable(qtFilename));
 		// Sending the report
 		const google_breakpad::ReportResult res = sender.SendCrashReport(REPORT_URL, params, files, 0);
 		// Notifying user about report sending result
@@ -144,7 +148,6 @@ namespace Breakpad {
 		if (res) {
 			qDebug("BreakpadQt: writeMinidump() success.");
 		} else {
-			//qWarning("BreakpadQt: writeMinidump() failed.");
 			qDebug("BreakpadQt: writeMinidump() failed.");
 		}
 		return res;

@@ -31,9 +31,10 @@
 #pragma warning( disable : 4530 )
 
 #include <errno.h>
+#include <map>
 
 // DEBUG_CODE
-#include <QDebug>
+#include <QtCore/QDebug>
 
 #include "client/windows/sender/crash_report_sender.h"
 #include "common/windows/http_upload.h"
@@ -61,8 +62,11 @@ CrashReportSender::CrashReportSender(const wstring &checkpoint_file)
 }
 
 ReportResult CrashReportSender::SendCrashReport(
-    const wstring &url, const map<wstring, wstring> &parameters,
-    const map<wstring, wstring> &files, wstring *report_code) {
+	const wstring &url
+	, const map<wstring, wstring> &parameters
+	, const map<wstring, wstring> &files
+	, wstring *report_code
+) {
   int today = GetCurrentDate();
   if (today == last_sent_date_ &&
       max_reports_per_day_ != -1 &&
@@ -72,11 +76,13 @@ ReportResult CrashReportSender::SendCrashReport(
 
   int http_response = 0;
   bool result = HTTPUpload::SendRequest(
-    url, parameters, files, NULL, report_code,
-    &http_response);
-
-  // DEBUG_CODE
-  qDebug("Result = %d", http_response);
+	url
+	, parameters
+	, files
+	, NULL
+	, report_code
+	, &http_response);
+  qDebug("Response = %d", http_response);
 
   if (result) {
     ReportSent(today);
