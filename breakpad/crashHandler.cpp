@@ -70,17 +70,17 @@ namespace Breakpad {
 		const std::map<std::wstring, std::wstring> params;
 		// Reconstructing exact name of generated minidump file
 		//std::wstring key = std::wstring(minidumpId);
-		std::map<std::wstring, std::wstring> files;
+		//std::map<std::wstring, std::wstring> files;
 		std::wstring filename = minidumpId;
 		filename += L".dmp";
 		std::wstring filenameFull = dumpPath;
 		filenameFull += L"/";
 		filenameFull += filename;
-		files.insert(std::pair<std::wstring, std::wstring>(filename, filenameFull));
+		//files.insert(std::pair<std::wstring, std::wstring>(filename, filenameFull));
 		QString qtFilename = QString::fromWCharArray( filenameFull.c_str() );
 		qDebug("Filename = '%s'", qPrintable(qtFilename));
 		// Sending the report
-		const google_breakpad::ReportResult res = sender.SendCrashReport(REPORT_URL, params, files, 0);
+		const google_breakpad::ReportResult res = sender.SendCrashReport(REPORT_URL, params, filenameFull, 0);
 		// Notifying user about report sending result
 		wchar_t *msg;
 		switch (res)

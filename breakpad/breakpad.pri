@@ -27,7 +27,7 @@ SOURCES += crashHandler.cpp
 HEADERS += crashHandler.h
 
 # Windows
-SOURCES +=\
+win32:SOURCES +=\
 	$$PWD/client/windows/crash_generation/crash_generation_client.cc \
 	$$PWD/client/windows/handler/exception_handler.cc \
 	$$PWD/client/windows/sender/crash_report_sender.cc \
@@ -35,7 +35,7 @@ SOURCES +=\
 	$$PWD/common/windows/http_upload.cc \
 	$$PWD/common/windows/string_utils.cc
 
-HEADERS +=\
+win32:HEADERS +=\
 	$$PWD/client/windows/common/ipc_protocol.h \
 	$$PWD/client/windows/crash_generation/crash_generation_client.h \
 	$$PWD/client/windows/handler/exception_handler.h \

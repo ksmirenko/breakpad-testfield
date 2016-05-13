@@ -64,7 +64,7 @@ CrashReportSender::CrashReportSender(const wstring &checkpoint_file)
 ReportResult CrashReportSender::SendCrashReport(
 	const wstring &url
 	, const map<wstring, wstring> &parameters
-	, const map<wstring, wstring> &files
+	, const wstring &dump_file_name
 	, wstring *report_code
 ) {
   int today = GetCurrentDate();
@@ -78,7 +78,8 @@ ReportResult CrashReportSender::SendCrashReport(
   bool result = HTTPUpload::SendRequest(
 	url
 	, parameters
-	, files
+	, dump_file_name
+	, L"upload_file_minidump"
 	, NULL
 	, report_code
 	, &http_response);
