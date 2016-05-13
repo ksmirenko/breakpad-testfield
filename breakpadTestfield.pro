@@ -4,9 +4,9 @@ CONFIG += c++11
 
 SUBDIRS += \
 	breakpad \
-	gui
+	testfield
 
-gui.depends = breakpad
+testfield.depends = breakpad
 
 QMAKE_LFLAGS_RELEASE += -MAP
 QMAKE_CFLAGS_RELEASE += -Zi
