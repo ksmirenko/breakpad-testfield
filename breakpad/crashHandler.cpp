@@ -30,24 +30,27 @@ namespace Breakpad {
 	public:
 		CrashHandlerPrivate()
 		{
-			pHandler = NULL;
+			exceptionHandler = NULL;
 		}
 
 		~CrashHandlerPrivate()
 		{
-			delete pHandler;
+			delete exceptionHandler;
 		}
 
 		void InitCrashHandler(const QString &dumpPath);
-		static google_breakpad::ExceptionHandler *pHandler;
-		static bool bReportCrashesToSystem;
+		static google_breakpad::ExceptionHandler *exceptionHandler;
+		static bool shouldReportCrashes;
 	};
 
 	const int MAX_REPORTS_PER_DAY = 5;
+	// TODO: this should be moved to some configuration file
 	const std::wstring &REPORT_URL = L"http://caliper-ksmirenko.rhcloud.com/crash_upload";
+	std::wstring productName = L"";
+	std::wstring productVersion = L"";
 	
-	google_breakpad::ExceptionHandler *CrashHandlerPrivate::pHandler = NULL;
-	bool CrashHandlerPrivate::bReportCrashesToSystem = true;
+	google_breakpad::ExceptionHandler *CrashHandlerPrivate::exceptionHandler = NULL;
+	bool CrashHandlerPrivate::shouldReportCrashes = true;
 
 	/// Callback that is called after minidumps have been written
 	bool DumpCallback(
@@ -67,18 +70,16 @@ namespace Breakpad {
 
 		google_breakpad::CrashReportSender sender(dumpPath);
 		sender.set_max_reports_per_day(MAX_REPORTS_PER_DAY);
-		const std::map<std::wstring, std::wstring> params;
+		// Adding parameters
+		std::map<std::wstring, std::wstring> params;
+		params[L"prod"] = productName;
+		params[L"ver"] = productVersion;
 		// Reconstructing exact name of generated minidump file
-		//std::wstring key = std::wstring(minidumpId);
-		//std::map<std::wstring, std::wstring> files;
 		std::wstring filename = minidumpId;
 		filename += L".dmp";
 		std::wstring filenameFull = dumpPath;
 		filenameFull += L"/";
 		filenameFull += filename;
-		//files.insert(std::pair<std::wstring, std::wstring>(filename, filenameFull));
-		QString qtFilename = QString::fromWCharArray( filenameFull.c_str() );
-		qDebug("Filename = '%s'", qPrintable(qtFilename));
 		// Sending the report
 		const google_breakpad::ReportResult res = sender.SendCrashReport(REPORT_URL, params, filenameFull, 0);
 		// Notifying user about report sending result
@@ -100,16 +101,15 @@ namespace Breakpad {
 		}
 		MessageBox(0, msg, L"Crash report", MB_OK|MB_ICONINFORMATION);
 
-		return CrashHandlerPrivate::bReportCrashesToSystem ? success : true;
+		return CrashHandlerPrivate::shouldReportCrashes ? success : true;
 	}
 
-	void CrashHandlerPrivate::InitCrashHandler(const QString &dumpPath)
-	{
-		if (pHandler != NULL)
+	void CrashHandlerPrivate::InitCrashHandler(const QString& dumpPath) {
+		if (exceptionHandler != NULL)
 			return;
 
 		std::wstring pathAsStr = (const wchar_t*)dumpPath.utf16();
-		pHandler = new google_breakpad::ExceptionHandler(
+		exceptionHandler = new google_breakpad::ExceptionHandler(
 			pathAsStr
 			, /*FilterCallback*/ 0
 			, DumpCallback
@@ -119,7 +119,7 @@ namespace Breakpad {
 	}
 
 	/************************************************************************/
-	/* CrashHandler														 */
+	/* CrashHandler                                                         */
 	/************************************************************************/
 	CrashHandler* CrashHandler::instance()
 	{
@@ -139,22 +139,19 @@ namespace Breakpad {
 
 	void CrashHandler::setReportCrashesToSystem(bool report)
 	{
-		d->bReportCrashesToSystem = report;
+		d->shouldReportCrashes = report;
 	}
 
 	bool CrashHandler::writeMinidump()
 	{
-		bool res = d->pHandler->WriteMinidump();
-		if (res) {
-			qDebug("BreakpadQt: writeMinidump() success.");
-		} else {
-			qDebug("BreakpadQt: writeMinidump() failed.");
-		}
+		bool res = d->exceptionHandler->WriteMinidump();
 		return res;
 	}
 
-	void CrashHandler::Init(const QString& dumpPath)
+	void CrashHandler::Init(const QString& dumpPath, std::wstring name, std::wstring version)
 	{
+		productName = name;
+		productVersion = version;
 		d->InitCrashHandler(dumpPath);
 		qDebug("Breakpad initialized!");
 	}

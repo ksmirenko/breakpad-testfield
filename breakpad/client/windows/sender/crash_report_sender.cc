@@ -33,9 +33,6 @@
 #include <errno.h>
 #include <map>
 
-// DEBUG_CODE
-#include <QtCore/QDebug>
-
 #include "client/windows/sender/crash_report_sender.h"
 #include "common/windows/http_upload.h"
 
@@ -83,7 +80,6 @@ ReportResult CrashReportSender::SendCrashReport(
 	, NULL
 	, report_code
 	, &http_response);
-  qDebug("Response = %d", http_response);
 
   if (result) {
     ReportSent(today);

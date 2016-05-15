@@ -33,9 +33,6 @@
 #include <fstream>
 #include <wininet.h>
 
-// DEBUG_CODE
-#include <QtCore/QDebug>
-
 #include "common/windows/string_utils-inl.h"
 
 // Disable exception handler warnings.
@@ -313,18 +310,12 @@ bool HTTPUpload::GenerateRequestBody(const map<wstring, wstring> &parameters,
     return false;
   }
 
-	//QString qtFilename = QString::fromWCharArray( pos->first.c_str() );
-	//qDebug("Filename in HttpUpload = '%s'", qPrintable(qtFilename));
-
   request_body->append("--" + boundary_str + "\r\n");
   request_body->append("Content-Disposition: form-data; "
                        "name=\"" + file_part_name_utf8 + "\"; "
                        "filename=\"" + filename_utf8 + "\"\r\n");
   request_body->append("Content-Type: application/octet-stream\r\n");
   request_body->append("\r\n");
-
-	qDebug("filename_utf8 = '%s'", qPrintable(QString::fromUtf8(filename_utf8.c_str())));
-	qDebug("file_part_name_utf8 = '%s'", qPrintable(QString::fromUtf8(file_part_name_utf8.c_str())));
 
   if (!contents.empty()) {
     request_body->append(&(contents[0]), contents.size());
