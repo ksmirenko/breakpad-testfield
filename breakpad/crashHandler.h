@@ -22,7 +22,7 @@ namespace Breakpad {
 	{
 	public:
 		static CrashHandler* instance();
-		void Init(const QString& dumpPath, std::wstring name, std::wstring version);
+		void Init(std::wstring dumpPath, std::wstring name, std::wstring version);
 
 		void setReportCrashesToSystem(bool report);
 		bool writeMinidump();

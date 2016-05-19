@@ -33,6 +33,8 @@
 #include <cassert>
 #include <cstdio>
 
+#include <QDebug>
+
 #include "common/windows/string_utils-inl.h"
 
 #include "client/windows/common/ipc_protocol.h"
@@ -153,6 +155,8 @@ void ExceptionHandler::Initialize(
     HANDLE pipe_handle,
     CrashGenerationClient* crash_generation_client,
     const CustomClientInfo* custom_info) {
+	qDebug() << Q_FUNC_INFO;
+
   LONG instance_count = InterlockedIncrement(&instance_count_);
   filter_ = filter;
   callback_ = callback;
@@ -202,6 +206,8 @@ void ExceptionHandler::Initialize(
       crash_generation_client_.reset(client.release());
     }
   }
+
+  qDebug() << "Oh, hello there! " << IsOutOfProcess();
 
   if (!IsOutOfProcess()) {
     // Either client did not ask for out-of-process crash generation
@@ -274,6 +280,7 @@ void ExceptionHandler::Initialize(
   }
 
   if (handler_types != HANDLER_NONE) {
+	  qDebug() << "Entered handler_types";
     EnterCriticalSection(&handler_stack_critical_section_);
 
     // The first time an ExceptionHandler that installs a handler is
@@ -283,16 +290,20 @@ void ExceptionHandler::Initialize(
     }
     handler_stack_->push_back(this);
 
-    if (handler_types & HANDLER_EXCEPTION)
+	if (handler_types & HANDLER_EXCEPTION) {
+		qDebug() << "HANDLER_EXCEPTION";
       previous_filter_ = SetUnhandledExceptionFilter(HandleException);
+	}
 
 #if _MSC_VER >= 1400  // MSVC 2005/8
     if (handler_types & HANDLER_INVALID_PARAMETER)
       previous_iph_ = _set_invalid_parameter_handler(HandleInvalidParameter);
 #endif  // _MSC_VER >= 1400
 
-    if (handler_types & HANDLER_PURECALL)
+	if (handler_types & HANDLER_PURECALL) {
+		qDebug() << "HANDLER_PURECALL";
       previous_pch_ = _set_purecall_handler(HandlePureVirtualCall);
+	}
 
     LeaveCriticalSection(&handler_stack_critical_section_);
   }
@@ -475,6 +486,8 @@ class AutoExceptionHandler {
 
 // static
 LONG ExceptionHandler::HandleException(EXCEPTION_POINTERS* exinfo) {
+	qDebug() << Q_FUNC_INFO;
+
   AutoExceptionHandler auto_exception_handler;
   ExceptionHandler* current_handler = auto_exception_handler.get_handler();
 
@@ -638,6 +651,8 @@ void ExceptionHandler::HandleInvalidParameter(const wchar_t* expression,
 
 // static
 void ExceptionHandler::HandlePureVirtualCall() {
+	qDebug() << Q_FUNC_INFO;
+
   // This is an pure virtual function call, not an exception.  It's safe to
   // play with sprintf here.
   AutoExceptionHandler auto_exception_handler;

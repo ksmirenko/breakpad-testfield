@@ -20,6 +20,8 @@
 #include <QtCore/QCoreApplication>
 #include <QString>
 
+#include <QDebug>
+
 // for now Breakpad will work on Windows only
 #include "client/windows/handler/exception_handler.h"
 #include "client/windows/sender/crash_report_sender.h"
@@ -31,26 +33,44 @@ namespace Breakpad {
 		CrashHandlerPrivate()
 		{
 			exceptionHandler = NULL;
+			dumpPath = NULL;
 		}
 
 		~CrashHandlerPrivate()
 		{
 			delete exceptionHandler;
+			delete dumpPath;
 		}
 
-		void InitCrashHandler(const QString &dumpPath);
+		void InitCrashHandler(std::wstring dumpPath);
 		static google_breakpad::ExceptionHandler *exceptionHandler;
 		static bool shouldReportCrashes;
+		static std::wstring	*dumpPath;
 	};
 
 	const int MAX_REPORTS_PER_DAY = 5;
 	// TODO: this should be moved to some configuration file
-	const std::wstring &REPORT_URL = L"http://caliper-ksmirenko.rhcloud.com/crash_upload";
+//	const std::wstring &REPORT_URL = L"http://caliper-ksmirenko.rhcloud.com/crash_upload";
+	const std::wstring &REPORT_URL = L"http://127.0.0.1:3000/crash_upload";
+
 	std::wstring productName = L"";
 	std::wstring productVersion = L"";
-	
+
 	google_breakpad::ExceptionHandler *CrashHandlerPrivate::exceptionHandler = NULL;
 	bool CrashHandlerPrivate::shouldReportCrashes = true;
+	std::wstring *CrashHandlerPrivate::dumpPath = NULL;
+
+	bool FilterCallback(
+		void* context
+		, EXCEPTION_POINTERS *exinfo
+		, MDRawAssertionInfo *assertion
+	) {
+		Q_UNUSED(context)
+		Q_UNUSED(exinfo)
+		Q_UNUSED(assertion)
+		qDebug() << "FilterCallback called";
+		return true;
+	}
 
 	/// Callback that is called after minidumps have been written
 	bool DumpCallback(
@@ -104,19 +124,32 @@ namespace Breakpad {
 		return CrashHandlerPrivate::shouldReportCrashes ? success : true;
 	}
 
-	void CrashHandlerPrivate::InitCrashHandler(const QString& dumpPath) {
+	void terminateHandler()
+	{
+		google_breakpad::ExceptionHandler::WriteMinidump(
+			*CrashHandlerPrivate::dumpPath
+			, DumpCallback
+			, NULL
+		);
+	}
+
+	void CrashHandlerPrivate::InitCrashHandler(std::wstring dumpPath) {
 		if (exceptionHandler != NULL)
 			return;
 
-		std::wstring pathAsStr = (const wchar_t*)dumpPath.utf16();
+//		std::wstring pathAsStr = (const wchar_t*)dumpPath.utf16();
 		exceptionHandler = new google_breakpad::ExceptionHandler(
-			pathAsStr
-			, /*FilterCallback*/ 0
+			dumpPath
+			, FilterCallback
 			, DumpCallback
 			, /*context*/ 0
-			, true
+			, google_breakpad::ExceptionHandler::HANDLER_ALL
 		);
+
+		CrashHandlerPrivate::dumpPath = new std::wstring(dumpPath);
+		std::set_terminate(terminateHandler);
 	}
+
 
 	/************************************************************************/
 	/* CrashHandler                                                         */
@@ -148,11 +181,11 @@ namespace Breakpad {
 		return res;
 	}
 
-	void CrashHandler::Init(const QString& dumpPath, std::wstring name, std::wstring version)
+	void CrashHandler::Init(std::wstring dumpPath, std::wstring name, std::wstring version)
 	{
 		productName = name;
 		productVersion = version;
 		d->InitCrashHandler(dumpPath);
-		qDebug("Breakpad initialized!");
+		qDebug() << "Breakpad initialized!";
 	}
 }

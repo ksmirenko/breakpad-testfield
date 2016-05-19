@@ -10,18 +10,18 @@ class MainWindow;
 
 class MainWindow : public QMainWindow
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
+	explicit MainWindow(QWidget *parent = 0);
+	~MainWindow();
 
 private slots:
-    void handleBreakButton();
+	void doBreak();
 
 private:
-    Ui::MainWindow *ui;
-    QPushButton *breakButton;
+	Ui::MainWindow *ui;
+	QPushButton *breakButton;
 };
 
 #endif // MAINWINDOW_H
